@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Training Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    :root{
+      --bg:#07090f;--s1:#0d1117;--s2:#111827;--border:#1e293b;
+      --blue:#3b82f6;--purple:#a78bfa;--green:#4ade80;--amber:#fbbf24;
+      --red:#f87171;--orange:#fb923c;--pink:#f472b6;
+      --text:#e2e8f0;--muted:#64748b;--subtle:#94a3b8;
+    }
+    body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;}
+    #app{max-width:780px;margin:0 auto;padding:20px 16px 60px;}
+
+    /* ── Setup ── */
+    #setup{display:flex;flex-direction:column;gap:0;}
+    .setup-hero{text-align:center;padding:48px 0 32px;}
+    .setup-hero .bolt{font-size:48px;display:block;margin-bottom:16px;}
+    .setup-hero h1{font-size:32px;font-weight:800;letter-spacing:-0.03em;}
+    .setup-hero p{color:var(--muted);font-size:14px;margin-top:8px;font-family:'DM Mono',monospace;}
+    .cred-card{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:12px;position:relative;overflow:hidden;}
+    .cred-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+    .cred-card.worker::before{background:linear-gradient(90deg,var(--purple),transparent);}
+    .cred-card.whoop::before{background:linear-gradient(90deg,var(--red),transparent);}
+    .cred-card.strava::before{background:linear-gradient(90deg,var(--orange),transparent);}
+    .cred-header{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+    .cred-dot{width:8px;height:8px;border-radius:50%;}
+    .cred-dot.worker{background:var(--purple);}.cred-dot.whoop{background:var(--red);}.cred-dot.strava{background:var(--orange);}
+    .cred-title{font-weight:700;font-size:15px;}
+    .field{margin-bottom:12px;}
+    .field label{display:block;color:var(--muted);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;font-family:'DM Mono',monospace;}
+    .field input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 14px;font-size:13px;font-family:'DM Mono',monospace;outline:none;transition:border-color 0.2s;}
+    .field input:focus{border-color:var(--blue);}
+    .field input::placeholder{color:#2d3f55;}
+    #connect-btn{width:100%;padding:15px;border-radius:12px;border:none;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.06em;cursor:pointer;transition:all 0.2s;margin-top:4px;background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;}
+    #connect-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(59,130,246,0.3);}
+    .guide-box{background:#0c1a2e;border:1px solid #1d3461;border-radius:12px;padding:16px;margin-top:16px;}
+    .guide-title{color:#93c5fd;font-size:11px;font-weight:700;letter-spacing:0.1em;margin-bottom:8px;font-family:'DM Mono',monospace;}
+    .guide-box p{color:var(--muted);font-size:13px;line-height:1.8;}
+
+    /* ── Loading ── */
+    #loading{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;gap:16px;}
+    .spinner{width:40px;height:40px;border-radius:50%;border:3px solid var(--border);border-top-color:var(--blue);animation:spin 0.8s linear infinite;}
+    #loading p{color:var(--muted);font-size:13px;font-family:'DM Mono',monospace;}
+
+    /* ── Dashboard ── */
+    #dashboard{display:none;flex-direction:column;gap:0;}
+    .dash-header{text-align:center;padding:28px 0 24px;}
+    .dash-header h1{font-size:24px;font-weight:800;letter-spacing:-0.02em;}
+    .dash-header .date{color:var(--muted);font-size:12px;margin-top:6px;font-family:'DM Mono',monospace;}
+
+    /* Section labels */
+    .section-label{display:flex;align-items:center;gap:10px;margin:24px 0 12px;}
+    .section-label .sl-dot{width:10px;height:10px;border-radius:50%;}
+    .section-label .sl-text{font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--subtle);}
+    .section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+    /* Cards */
+    .card{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:20px;position:relative;overflow:hidden;margin-bottom:12px;}
+    .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+    .card.red::before{background:linear-gradient(90deg,var(--red),transparent);}
+    .card.green::before{background:linear-gradient(90deg,var(--green),transparent);}
+    .card.blue::before{background:linear-gradient(90deg,var(--blue),transparent);}
+    .card.purple::before{background:linear-gradient(90deg,var(--purple),transparent);}
+    .card.orange::before{background:linear-gradient(90deg,var(--orange),transparent);}
+    .card.amber::before{background:linear-gradient(90deg,var(--amber),transparent);}
+    .card-title{font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--subtle);margin-bottom:16px;}
+
+    /* Rings row */
+    .rings-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+    .ring-item{display:flex;flex-direction:column;align-items:center;gap:8px;}
+    .ring-label{text-align:center;}
+    .ring-label .rl{color:var(--muted);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;font-family:'DM Mono',monospace;}
+    .ring-label .rv{font-size:11px;margin-top:2px;font-family:'DM Mono',monospace;font-weight:600;}
+
+    /* Stats grid */
+    .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+    .stat{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+    .stat .st-label{color:var(--muted);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:5px;font-family:'DM Mono',monospace;}
+    .stat .st-val{font-size:20px;font-weight:700;font-family:'DM Mono',monospace;line-height:1;}
+    .stat .st-sub{color:var(--muted);font-size:10px;margin-top:3px;font-family:'DM Mono',monospace;}
+
+    /* Activity list */
+    .activity-list{display:flex;flex-direction:column;gap:8px;}
+    .activity-row{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;}
+    .activity-name{font-size:13px;font-weight:600;}
+    .activity-meta{display:flex;gap:16px;flex-wrap:wrap;}
+    .activity-meta span{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);}
+    .activity-meta b{color:var(--text);}
+    .activity-date{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:right;}
+
+    /* AI daily report */
+    .ai-report-card{background:linear-gradient(135deg,#0b1628,var(--s1));border:1px solid #1d3461;}
+    .ai-report-card::before{background:linear-gradient(90deg,var(--blue),var(--purple),transparent) !important;}
+    .ai-report-header{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+    .ai-report-label{color:#93c5fd;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;}
+    #report-refresh{margin-left:auto;background:none;border:1px solid #1d3461;border-radius:6px;color:var(--blue);font-size:10px;padding:4px 10px;cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.2s;}
+    #report-refresh:hover{background:#1d3461;}
+    #report-text{color:var(--subtle);font-size:14px;line-height:1.8;white-space:pre-wrap;}
+    #report-text.loading{color:var(--blue);font-style:italic;animation:pulse 1.5s ease infinite;}
+
+    /* AI Chat */
+    .chat-card{background:var(--s1);border:1px solid var(--border);}
+    .chat-messages{display:flex;flex-direction:column;gap:12px;min-height:80px;max-height:400px;overflow-y:auto;margin-bottom:14px;padding-right:4px;}
+    .chat-msg{padding:10px 14px;border-radius:10px;font-size:13px;line-height:1.7;max-width:90%;}
+    .chat-msg.user{background:#1d3461;color:#bfdbfe;align-self:flex-end;font-family:'DM Mono',monospace;font-size:12px;}
+    .chat-msg.ai{background:var(--bg);border:1px solid var(--border);color:var(--subtle);align-self:flex-start;white-space:pre-wrap;}
+    .chat-msg.ai.loading{color:var(--blue);font-style:italic;animation:pulse 1.5s ease infinite;}
+    .chat-input-row{display:flex;gap:8px;}
+    #chat-input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 14px;font-size:13px;font-family:'DM Mono',monospace;outline:none;transition:border-color 0.2s;}
+    #chat-input:focus{border-color:var(--blue);}
+    #chat-input::placeholder{color:#2d3f55;}
+    #chat-send{background:linear-gradient(135deg,var(--blue),var(--purple));border:none;border-radius:8px;color:#fff;padding:10px 18px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+    #chat-send:hover{transform:translateY(-1px);}
+    #chat-send:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+
+    .disconnect{text-align:center;margin-top:16px;}
+    .disconnect button{background:none;border:none;color:#334155;font-size:12px;cursor:pointer;font-family:'DM Mono',monospace;}
+    .disconnect button:hover{color:var(--muted);}
+
+    @keyframes spin{to{transform:rotate(360deg);}}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+    .card{animation:fadeUp 0.35s ease both;}
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- SETUP -->
+  <div id="setup">
+    <div class="setup-hero">
+      <span class="bolt">⚡</span>
+      <h1>Training Dashboard</h1>
+      <p>WHOOP + Strava + Claude AI</p>
+    </div>
+    <div class="cred-card worker">
+      <div class="cred-header"><div class="cred-dot worker"></div><span class="cred-title">Cloudflare Worker URL</span></div>
+      <div class="field"><label>Worker URL</label><input id="worker-url" placeholder="https://training-proxy.yourname.workers.dev" /></div>
+    </div>
+    <div class="cred-card whoop">
+      <div class="cred-header"><div class="cred-dot whoop"></div><span class="cred-title">WHOOP</span></div>
+      <div class="field"><label>Client ID</label><input id="w-id" placeholder="0db96678-..." /></div>
+    </div>
+    <div class="cred-card strava">
+      <div class="cred-header"><div class="cred-dot strava"></div><span class="cred-title">Strava</span></div>
+      <div class="field"><label>Client ID</label><input id="s-id" placeholder="12345678" /></div>
+    </div>
+    <button id="connect-btn">CONNECT &amp; AUTHORIZE</button>
+    <div class="guide-box">
+      <div class="guide-title">ℹ️ NOTE</div>
+      <p>Client secrets are stored securely in your Cloudflare Worker. You only need Client IDs and Worker URL here.</p>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loading"><div class="spinner"></div><p id="loading-msg">Authorizing...</p></div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard">
+    <div class="dash-header">
+      <h1>Training Dashboard</h1>
+      <div class="date" id="today-date"></div>
+    </div>
+
+    <!-- WHOOP Section -->
+    <div class="section-label">
+      <div class="sl-dot" style="background:var(--red)"></div>
+      <span class="sl-text">WHOOP</span>
+    </div>
+
+    <div class="card red">
+      <div class="card-title">Recovery &amp; HRV</div>
+      <div class="rings-row" id="rings"></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div class="card green" style="margin-bottom:0">
+        <div class="card-title">Sleep</div>
+        <div class="stats-grid" style="grid-template-columns:1fr 1fr;" id="sleep-stats"></div>
+      </div>
+      <div class="card amber" style="margin-bottom:0">
+        <div class="card-title">Today's Strain</div>
+        <div id="strain-stats"></div>
+      </div>
+    </div>
+
+    <!-- Strava Section -->
+    <div class="section-label">
+      <div class="sl-dot" style="background:var(--orange)"></div>
+      <span class="sl-text">Strava</span>
+    </div>
+
+    <div class="card orange">
+      <div class="card-title">Weekly Summary</div>
+      <div class="stats-grid" id="strava-summary"></div>
+    </div>
+
+    <div class="card blue">
+      <div class="card-title">Recent Activities</div>
+      <div class="activity-list" id="activity-list"></div>
+    </div>
+
+    <!-- AI Section -->
+    <div class="section-label">
+      <div class="sl-dot" style="background:var(--purple)"></div>
+      <span class="sl-text">AI Coach</span>
+    </div>
+
+    <div class="card ai-report-card">
+      <div class="ai-report-header">
+        <span>📋</span>
+        <span class="ai-report-label">Daily Briefing</span>
+        <button id="report-refresh">REFRESH</button>
+      </div>
+      <div id="report-text" class="loading">Analysing your training data...</div>
+    </div>
+
+    <div class="card chat-card purple">
+      <div class="card-title" style="margin-bottom:12px;">💬 Ask Your Coach</div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input-row">
+        <input id="chat-input" placeholder="e.g. Give me a 4-week running plan..." />
+        <button id="chat-send">SEND</button>
+      </div>
+    </div>
+
+    <div class="disconnect"><button id="disconnect-btn">disconnect &amp; reset</button></div>
+  </div>
+</div>
+
+<script>
+const WHOOP_AUTH  = "https://api.prod.whoop.com/oauth/oauth2/auth";
+const STRAVA_AUTH = "https://www.strava.com/oauth/authorize";
+const REDIRECT_URI = window.location.href.split("?")[0].split("#")[0];
+
+function show(s){
+  document.getElementById("setup").style.display    = s==="setup"     ? "flex":"none";
+  document.getElementById("loading").style.display  = s==="loading"   ? "flex":"none";
+  document.getElementById("dashboard").style.display= s==="dashboard" ? "flex":"none";
+}
+function fmtHours(ms){if(!ms)return"—";return`${Math.floor(ms/3600000)}h ${Math.floor((ms%3600000)/60000)}m`;}
+function fmtPace(s){if(!s)return"—";const k=Math.round(1000/s);return`${Math.floor(k/60)}:${String(k%60).padStart(2,"0")}/km`;}
+function fmtDist(m){return m?`${(m/1000).toFixed(1)} km`:"—";}
+function fmtDate(d){return new Date(d).toLocaleDateString("sv-SE",{month:"short",day:"numeric"});}
+function scoreColor(v){const p=(v||0)/100;return p>=0.67?"var(--green)":p>=0.33?"var(--amber)":"var(--red)";}
+
+function ring(value,max,color,label,sub){
+  const sz=72,st=6,r=(sz-st)/2,c=2*Math.PI*r,p=Math.min((value||0)/max,1);
+  return`<div class="ring-item">
+    <svg width="${sz}" height="${sz}" style="transform:rotate(-90deg)">
+      <circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="#1e293b" stroke-width="${st}"/>
+      <circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${st}"
+        stroke-dasharray="${c}" stroke-dashoffset="${c*(1-p)}" stroke-linecap="round"
+        style="transition:stroke-dashoffset 1s ease"/>
+      <text x="${sz/2}" y="${sz/2}" text-anchor="middle" dominant-baseline="middle" fill="#f1f5f9"
+        font-size="${sz*0.22}" font-weight="700" font-family="DM Mono,monospace"
+        style="transform:rotate(90deg);transform-origin:${sz/2}px ${sz/2}px">${Math.round(value||0)}</text>
+    </svg>
+    <div class="ring-label"><div class="rl">${label}</div><div class="rv" style="color:${color}">${sub}</div></div>
+  </div>`;
+}
+function stat(label,val,sub="",color="var(--text)"){
+  return`<div class="stat"><div class="st-label">${label}</div><div class="st-val" style="color:${color}">${val}</div>${sub?`<div class="st-sub">${sub}</div>`:""}</div>`;
+}
+
+async function generatePKCE(){
+  const v=Array.from(crypto.getRandomValues(new Uint8Array(32))).map(b=>b.toString(16).padStart(2,"0")).join("");
+  const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));
+  const c=btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=/g,"");
+  return{verifier:v,challenge:c};
+}
+
+async function startAuth(){
+  const cfg={
+    workerUrl:document.getElementById("worker-url").value.trim().replace(/\/$/,""),
+    wId:document.getElementById("w-id").value.trim(),
+    sId:document.getElementById("s-id").value.trim(),
+  };
+  if(!cfg.workerUrl||!cfg.wId||!cfg.sId){alert("Please fill in all fields.");return;}
+  sessionStorage.setItem("cfg",JSON.stringify(cfg));
+  sessionStorage.setItem("step","whoop");
+  const{verifier,challenge}=await generatePKCE();
+  sessionStorage.setItem("pkce",verifier);
+  const state=Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,"0")).join("");
+  sessionStorage.setItem("oauth_state",state);
+  window.location.href=`${WHOOP_AUTH}?response_type=code&client_id=${cfg.wId}`
+    +`&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`
+    +`&scope=read:recovery read:sleep read:workout read:cycles`
+    +`&state=${state}&code_challenge=${challenge}&code_challenge_method=S256`;
+}
+
+async function handleCallback(){
+  const params=new URLSearchParams(window.location.search);
+  const code=params.get("code"),step=sessionStorage.getItem("step");
+  const cfg=JSON.parse(sessionStorage.getItem("cfg")||"null");
+  if(!code||!cfg)return false;
+  show("loading");
+  if(step==="whoop"){
+    document.getElementById("loading-msg").textContent="Exchanging WHOOP token...";
+    const res=await fetch(`${cfg.workerUrl}/whoop/token`,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({code,redirect_uri:REDIRECT_URI,code_verifier:sessionStorage.getItem("pkce")})});
+    const data=await res.json();
+    if(!data.access_token){alert("WHOOP failed: "+JSON.stringify(data));show("setup");return true;}
+    sessionStorage.setItem("whoop_token",data.access_token);
+    sessionStorage.setItem("step","strava");
+    window.history.replaceState({},"",REDIRECT_URI);
+    document.getElementById("loading-msg").textContent="Now authorizing Strava...";
+    await new Promise(r=>setTimeout(r,600));
+    window.location.href=`${STRAVA_AUTH}?client_id=${cfg.sId}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=activity:read_all`;
+    return true;
+  }
+  if(step==="strava"){
+    document.getElementById("loading-msg").textContent="Exchanging Strava token...";
+    const res=await fetch(`${cfg.workerUrl}/strava/token`,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({code})});
+    const data=await res.json();
+    if(!data.access_token){alert("Strava failed: "+JSON.stringify(data));show("setup");return true;}
+    sessionStorage.setItem("strava_token",data.access_token);
+    sessionStorage.removeItem("step");
+    window.history.replaceState({},"",REDIRECT_URI);
+    await loadDashboard();
+    return true;
+  }
+  return false;
+}
+
+async function loadDashboard(){
+  show("loading");
+  document.getElementById("loading-msg").textContent="Fetching your data...";
+  const wt=sessionStorage.getItem("whoop_token"),st=sessionStorage.getItem("strava_token");
+  const cfg=JSON.parse(sessionStorage.getItem("cfg")||"{}");
+
+  async function wFetch(path){
+    const r=await fetch(`${cfg.workerUrl}/whoop/api${path}`,{headers:{Authorization:`Bearer ${wt}`}});
+    const text=await r.text();
+    try{return JSON.parse(text);}catch{throw new Error(`WHOOP${path}: ${text.slice(0,120)}`);}
+  }
+  async function sFetch(path){
+    const r=await fetch(`https://www.strava.com/api/v3${path}`,{headers:{Authorization:`Bearer ${st}`}});
+    const text=await r.text();
+    try{return JSON.parse(text);}catch{throw new Error(`Strava${path}: ${text.slice(0,120)}`);}
+  }
+
+  try{
+    const[rd,sd,cd,acts]=await Promise.all([
+      wFetch("/recovery?limit=1"),
+      wFetch("/activity/sleep?limit=1"),
+      wFetch("/cycle?limit=1"),
+      sFetch("/athlete/activities?per_page=20"),
+    ]);
+
+    // Parse WHOOP v2 response — try multiple field paths
+    const recRaw  = rd?.records?.[0] ?? rd ?? {};
+    const sleepRaw = sd?.records?.[0] ?? sd ?? {};
+    const cycleRaw = cd?.records?.[0] ?? cd ?? {};
+
+    const rec = {
+      score:           recRaw?.score?.recovery_score ?? recRaw?.recovery_score ?? null,
+      hrv:             recRaw?.score?.hrv_rmssd_milli ?? recRaw?.hrv_rmssd_milli ?? null,
+      resting_hr:      recRaw?.score?.resting_heart_rate ?? recRaw?.resting_heart_rate ?? null,
+    };
+    const sleep = {
+      score:           sleepRaw?.score?.sleep_performance_percentage ?? sleepRaw?.sleep_performance_percentage ?? null,
+      total_ms:        sleepRaw?.score?.total_in_bed_time_milli ?? sleepRaw?.total_in_bed_time_milli ?? null,
+      efficiency:      sleepRaw?.score?.sleep_efficiency_percentage ?? sleepRaw?.sleep_efficiency_percentage ?? null,
+      disturbances:    sleepRaw?.score?.disturbance_count ?? sleepRaw?.disturbance_count ?? null,
+    };
+    const cycle = {
+      strain:          cycleRaw?.score?.strain ?? cycleRaw?.strain ?? null,
+      avg_hr:          cycleRaw?.score?.average_heart_rate ?? cycleRaw?.average_heart_rate ?? null,
+      max_hr:          cycleRaw?.score?.max_heart_rate ?? cycleRaw?.max_heart_rate ?? null,
+      kilojoules:      cycleRaw?.score?.kilojoule ?? cycleRaw?.kilojoule ?? null,
+    };
+
+    const runs=Array.isArray(acts)?acts.filter(a=>a.type==="Run"):[];
+    const allActs=Array.isArray(acts)?acts:[];
+
+    renderDashboard(rec,sleep,cycle,runs,allActs);
+    window._dashData={rec,sleep,cycle,runs,allActs,raw:{rd,sd,cd}};
+    generateReport();
+    show("dashboard");
+  }catch(e){alert("Failed: "+e.message);show("setup");}
+}
+
+function renderDashboard(rec,sleep,cycle,runs,allActs){
+  document.getElementById("today-date").textContent=
+    new Date().toLocaleDateString("sv-SE",{weekday:"long",month:"long",day:"numeric"});
+
+  // Rings
+  document.getElementById("rings").innerHTML=
+    ring(rec.score||0,100,scoreColor(rec.score||0),"Recovery",rec.score!=null?`${Math.round(rec.score)}%`:"—")+
+    ring(Math.min((rec.hrv||0)/1.5,100),100,"var(--purple)","HRV",rec.hrv?`${Math.round(rec.hrv)}ms`:"—")+
+    ring(sleep.score||0,100,"var(--blue)","Sleep",sleep.score!=null?`${Math.round(sleep.score)}%`:"—")+
+    ring(Math.min((cycle.strain||0)/21*100,100),100,"var(--orange)","Strain",cycle.strain!=null?`${(cycle.strain).toFixed(1)}/21`:"—");
+
+  // Sleep
+  document.getElementById("sleep-stats").innerHTML=
+    stat("Duration",fmtHours(sleep.total_ms),"","var(--blue)")+
+    stat("Efficiency",sleep.efficiency!=null?`${Math.round(sleep.efficiency)}%`:"—","","var(--purple)")+
+    stat("Score",sleep.score!=null?`${Math.round(sleep.score)}%`:"—","","var(--green)")+
+    stat("Disturbances",sleep.disturbances!=null?sleep.disturbances:"—","","var(--amber)");
+
+  // Strain
+  document.getElementById("strain-stats").innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      ${stat("Strain Score",cycle.strain!=null?cycle.strain.toFixed(1):"—","out of 21","var(--amber)")}
+      ${stat("Avg HR",cycle.avg_hr?`${Math.round(cycle.avg_hr)} bpm`:"—","","var(--red)")}
+      ${stat("Calories",cycle.kilojoules?`${Math.round(cycle.kilojoules/4.184)} kcal`:"—","","var(--orange)")}
+    </div>`;
+
+  // Strava weekly summary
+  const now=Date.now();
+  const weekActs=allActs.filter(a=>now-new Date(a.start_date)<7*86400000);
+  const weekRuns=weekActs.filter(a=>a.type==="Run");
+  const weekKm=weekRuns.reduce((s,a)=>s+a.distance/1000,0);
+  const weekTime=weekRuns.reduce((s,a)=>s+a.moving_time,0);
+  const avgPace=weekKm>0?weekTime/weekKm:null;
+  document.getElementById("strava-summary").innerHTML=
+    stat("Week Distance",weekKm>0?`${weekKm.toFixed(1)} km`:"—","runs","var(--orange)")+
+    stat("Runs This Week",`${weekRuns.length}`,"activities","var(--amber)")+
+    stat("Avg Pace",avgPace?fmtPace(1000/avgPace):"—","this week","var(--green)");
+
+  // Activity list (last 6)
+  const recent=allActs.slice(0,6);
+  document.getElementById("activity-list").innerHTML=recent.length?recent.map(a=>`
+    <div class="activity-row">
+      <div>
+        <div class="activity-name">${a.name}</div>
+        <div class="activity-meta">
+          <span>${a.type}</span>
+          <span><b>${fmtDist(a.distance)}</b></span>
+          ${a.average_speed?`<span>Pace <b>${fmtPace(a.average_speed)}</b></span>`:""}
+          ${a.average_heartrate?`<span>HR <b>${Math.round(a.average_heartrate)} bpm</b></span>`:""}
+          ${a.total_elevation_gain?`<span>↑<b>${Math.round(a.total_elevation_gain)}m</b></span>`:""}
+        </div>
+      </div>
+      <div class="activity-date">${fmtDate(a.start_date)}</div>
+    </div>`).join("")
+    :"<div style='color:var(--muted);font-size:13px;text-align:center;padding:16px'>No recent activities</div>";
+}
+
+// ── AI Daily Report ────────────────────────────────────────────────────────
+async function generateReport(){
+  const d=window._dashData;if(!d)return;
+  const el=document.getElementById("report-text");
+  el.className="loading";el.textContent="Generating your daily briefing...";
+
+  const{rec,sleep,cycle,runs,allActs}=d;
+  const now=Date.now();
+  const weekRuns=allActs.filter(a=>a.type==="Run"&&now-new Date(a.start_date)<7*86400000);
+  const weekKm=weekRuns.reduce((s,a)=>s+a.distance/1000,0);
+
+  const prompt=`You are an expert sports science coach. Based on this athlete's data, write a structured daily training briefing. Use plain text with clear sections using emoji headers. Be specific, direct, and actionable.
+
+TODAY'S WHOOP DATA:
+- Recovery score: ${rec.score!=null?Math.round(rec.score)+"%":"not yet calculated"}
+- HRV: ${rec.hrv?Math.round(rec.hrv)+"ms":"N/A"}
+- Resting HR: ${rec.resting_hr?rec.resting_hr+" bpm":"N/A"}
+- Sleep score: ${sleep.score!=null?Math.round(sleep.score)+"%":"N/A"}
+- Sleep duration: ${fmtHours(sleep.total_ms)}
+- Sleep efficiency: ${sleep.efficiency!=null?Math.round(sleep.efficiency)+"%":"N/A"}
+- Today's strain so far: ${cycle.strain!=null?cycle.strain.toFixed(1)+"/21":"N/A"}
+
+RECENT STRAVA RUNS:
+${runs.slice(0,5).map((a,i)=>`${i+1}. ${a.name} — ${(a.distance/1000).toFixed(1)}km at ${fmtPace(a.average_speed)} pace${a.average_heartrate?", avg HR "+Math.round(a.average_heartrate)+"bpm":""} (${fmtDate(a.start_date)})`).join("\n")||"No recent runs"}
+
+Week volume: ${weekKm.toFixed(1)}km across ${weekRuns.length} runs
+
+Write a briefing with these sections:
+🔋 Recovery Status (2-3 sentences interpreting the WHOOP data)
+🎯 Today's Recommendation (specific training suggestion with intensity and duration)
+📈 Trend (what the recent run data shows about fitness/form)
+⚡ Key Focus (one thing to prioritize today)
+
+Be specific — mention actual numbers and give concrete pace/HR targets when relevant. No markdown formatting, just emoji + section name on its own line, then the content.`;
+
+  try{
+    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
+    const data=await res.json();
+    el.className="";
+    el.textContent=data.content?.[0]?.text??"Could not generate briefing.";
+  }catch{el.className="";el.textContent="Failed to reach AI. Try refreshing.";}
+}
+
+// ── AI Chat ────────────────────────────────────────────────────────────────
+let chatHistory=[];
+
+async function sendChat(){
+  const input=document.getElementById("chat-input");
+  const msg=input.value.trim();
+  if(!msg)return;
+  input.value="";
+
+  const d=window._dashData;
+  const msgs=document.getElementById("chat-messages");
+
+  // User bubble
+  const userBubble=document.createElement("div");
+  userBubble.className="chat-msg user";
+  userBubble.textContent=msg;
+  msgs.appendChild(userBubble);
+
+  // AI bubble
+  const aiBubble=document.createElement("div");
+  aiBubble.className="chat-msg ai loading";
+  aiBubble.textContent="Thinking...";
+  msgs.appendChild(aiBubble);
+  msgs.scrollTop=msgs.scrollHeight;
+
+  document.getElementById("chat-send").disabled=true;
+
+  chatHistory.push({role:"user",content:msg});
+
+  const{rec,sleep,cycle,runs,allActs}=d||{};
+  const now=Date.now();
+  const weekRuns=(allActs||[]).filter(a=>a.type==="Run"&&now-new Date(a.start_date)<7*86400000);
+  const weekKm=weekRuns.reduce((s,a)=>s+a.distance/1000,0);
+
+  const systemPrompt=`You are an expert sports science coach with full access to this athlete's WHOOP and Strava data. Answer questions and give recommendations based on their actual data. Be specific, practical, and encouraging.
+
+ATHLETE DATA:
+WHOOP — Recovery: ${rec?.score!=null?Math.round(rec.score)+"%":"N/A"}, HRV: ${rec?.hrv?Math.round(rec.hrv)+"ms":"N/A"}, Resting HR: ${rec?.resting_hr?rec.resting_hr+" bpm":"N/A"}, Sleep: ${sleep?.score!=null?Math.round(sleep.score)+"%":"N/A"} (${fmtHours(sleep?.total_ms)}), Strain: ${cycle?.strain!=null?cycle.strain.toFixed(1)+"/21":"N/A"}
+
+Strava — Week: ${weekKm.toFixed(1)}km, ${weekRuns.length} runs
+Recent runs: ${(runs||[]).slice(0,5).map(a=>`${(a.distance/1000).toFixed(1)}km @ ${fmtPace(a.average_speed)}`).join(", ")||"none"}
+
+Respond in plain text, no markdown headers. Be concise but thorough.`;
+
+  try{
+    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-20250514",max_tokens:1000,
+        system:systemPrompt,
+        messages:chatHistory,
+      })});
+    const data=await res.json();
+    const reply=data.content?.[0]?.text??"Sorry, I couldn't generate a response.";
+    aiBubble.className="chat-msg ai";
+    aiBubble.textContent=reply;
+    chatHistory.push({role:"assistant",content:reply});
+  }catch{
+    aiBubble.className="chat-msg ai";
+    aiBubble.textContent="Failed to reach AI. Check your connection.";
+  }
+
+  document.getElementById("chat-send").disabled=false;
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded",function(){
+  document.getElementById("connect-btn").addEventListener("click",startAuth);
+  document.getElementById("report-refresh").addEventListener("click",generateReport);
+  document.getElementById("disconnect-btn").addEventListener("click",()=>{sessionStorage.clear();show("setup");});
+  document.getElementById("chat-send").addEventListener("click",sendChat);
+  document.getElementById("chat-input").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey)sendChat();});
+
+  const saved=JSON.parse(sessionStorage.getItem("cfg")||"null");
+  if(saved){
+    document.getElementById("worker-url").value=saved.workerUrl||"";
+    document.getElementById("w-id").value=saved.wId||"";
+    document.getElementById("s-id").value=saved.sId||"";
+  }
+
+  handleCallback().then(handled=>{
+    if(handled)return;
+    const wt=sessionStorage.getItem("whoop_token"),st=sessionStorage.getItem("strava_token");
+    if(wt&&st){loadDashboard();return;}
+    show("setup");
+  });
+});
+</script>
+</body>
+</html>
