@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — Training Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #060910;
+      color: #e2e8f0;
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      padding: 48px 16px;
+    }
+    .wrap { max-width: 640px; margin: 0 auto; }
+    h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; }
+    .sub { color: #64748b; font-size: 13px; font-family: 'DM Mono', monospace; margin-bottom: 40px; }
+    h2 { font-size: 16px; font-weight: 700; color: #3b82f6; margin: 32px 0 10px; letter-spacing: 0.04em; }
+    p { color: #94a3b8; font-size: 14px; line-height: 1.8; margin-bottom: 12px; }
+    .divider { border: none; border-top: 1px solid #1a2236; margin: 8px 0; }
+    a { color: #3b82f6; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .back { display: inline-block; color: #64748b; font-size: 13px; font-family: 'DM Mono', monospace; margin-bottom: 32px; text-decoration: none; }
+    .back:hover { color: #94a3b8; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← back to dashboard</a>
+  <h1>Privacy Policy</h1>
+  <p class="sub">Training Dashboard · Last updated: 2026</p>
+  <hr class="divider" />
+
+  <h2>Overview</h2>
+  <p>This is a personal training dashboard built for private use. It connects to WHOOP and Strava to display health and activity data in one place, with AI-generated coaching insights.</p>
+
+  <h2>Data We Access</h2>
+  <p>When you connect your accounts, this app reads the following data from WHOOP and Strava via their official APIs:</p>
+  <p><strong style="color:#e2e8f0">WHOOP:</strong> Recovery scores, HRV, resting heart rate, sleep data, strain, and cycle data.</p>
+  <p><strong style="color:#e2e8f0">Strava:</strong> Your recent activity list including distance, pace, heart rate, and activity type.</p>
+
+  <h2>How Your Data Is Used</h2>
+  <p>Your data is used solely to display your personal dashboard and to generate AI coaching insights via the Anthropic Claude API. The AI receives a summary of your metrics (no personal identifiers) to produce training recommendations.</p>
+
+  <h2>Data Storage</h2>
+  <p>This app does not operate a server or database. No data is stored anywhere outside your own browser. Access tokens from WHOOP and Strava are stored in your browser's session storage only, and are cleared when you close the tab or disconnect.</p>
+
+  <h2>Third-Party Services</h2>
+  <p>This app communicates with the following third-party services:</p>
+  <p><strong style="color:#e2e8f0">WHOOP API</strong> — to read your health data. Governed by <a href="https://www.whoop.com/privacy" target="_blank">WHOOP's Privacy Policy</a>.</p>
+  <p><strong style="color:#e2e8f0">Strava API</strong> — to read your activity data. Governed by <a href="https://www.strava.com/legal/privacy" target="_blank">Strava's Privacy Policy</a>.</p>
+  <p><strong style="color:#e2e8f0">Anthropic Claude API</strong> — to generate AI coaching insights. Governed by <a href="https://www.anthropic.com/privacy" target="_blank">Anthropic's Privacy Policy</a>.</p>
+
+  <h2>Data Sharing</h2>
+  <p>Your data is never sold, shared with third parties, or used for advertising. The only external communication is directly with the three services listed above.</p>
+
+  <h2>Your Rights</h2>
+  <p>You can revoke this app's access to your WHOOP or Strava account at any time through their respective account settings pages. Disconnecting in the dashboard clears all locally stored tokens immediately.</p>
+
+  <h2>Contact</h2>
+  <p>This is a personal project. If you have questions about how your data is handled, you can reach out via your GitHub repository.</p>
+</div>
+</body>
+</html>
