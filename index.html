@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Training Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #060910;
+      --surface:  #0d1117;
+      --border:   #1a2236;
+      --blue:     #3b82f6;
+      --blue-dim: #1d3461;
+      --purple:   #a78bfa;
+      --green:    #4ade80;
+      --amber:    #fbbf24;
+      --red:      #f87171;
+      --orange:   #fb923c;
+      --text:     #e2e8f0;
+      --muted:    #64748b;
+      --subtle:   #94a3b8;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Layout ── */
+    #app { max-width: 700px; margin: 0 auto; padding: 24px 16px 48px; }
+
+    /* ── Setup Screen ── */
+    #setup { display: flex; flex-direction: column; gap: 0; }
+
+    .setup-hero { text-align: center; padding: 48px 0 32px; }
+    .setup-hero .bolt { font-size: 48px; display: block; margin-bottom: 16px; }
+    .setup-hero h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.03em; color: var(--text); }
+    .setup-hero p { color: var(--muted); font-size: 15px; margin-top: 8px; font-family: 'DM Mono', monospace; }
+
+    .cred-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+    .cred-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+    .cred-card.whoop::before { background: linear-gradient(90deg, #f87171, transparent); }
+    .cred-card.strava::before { background: linear-gradient(90deg, #fb923c, transparent); }
+
+    .cred-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .cred-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .cred-dot.whoop { background: #f87171; }
+    .cred-dot.strava { background: #fb923c; }
+    .cred-title { font-weight: 700; font-size: 15px; }
+    .cred-link { margin-left: auto; color: var(--blue); font-size: 12px; text-decoration: none; font-family: 'DM Mono', monospace; }
+    .cred-link:hover { text-decoration: underline; }
+
+    .field { margin-bottom: 12px; }
+    .field label { display: block; color: var(--muted); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; font-family: 'DM Mono', monospace; }
+    .field input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 10px 14px;
+      font-size: 13px;
+      font-family: 'DM Mono', monospace;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field input:focus { border-color: var(--blue); }
+    .field input::placeholder { color: #334155; }
+
+    #connect-btn {
+      width: 100%;
+      padding: 15px;
+      border-radius: 12px;
+      border: none;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 4px;
+    }
+    #connect-btn:disabled { background: #1e293b; color: #475569; cursor: not-allowed; }
+    #connect-btn:not(:disabled) { background: linear-gradient(135deg, var(--blue), var(--purple)); color: #fff; }
+    #connect-btn:not(:disabled):hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(59,130,246,0.3); }
+
+    .guide-box {
+      background: #0c1a2e;
+      border: 1px solid var(--blue-dim);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    .guide-box .guide-title { color: #93c5fd; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; margin-bottom: 10px; font-family: 'DM Mono', monospace; }
+    .guide-box p { color: var(--muted); font-size: 13px; line-height: 1.8; }
+    .guide-box b { color: var(--subtle); }
+
+    /* ── Loading ── */
+    #loading {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 16px;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: 3px solid var(--border);
+      border-top-color: var(--blue);
+      animation: spin 0.8s linear infinite;
+    }
+    #loading p { color: var(--muted); font-size: 13px; font-family: 'DM Mono', monospace; }
+
+    /* ── Dashboard ── */
+    #dashboard { display: none; flex-direction: column; gap: 14px; }
+
+    .dash-header { text-align: center; padding: 24px 0 8px; }
+    .dash-header h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+    .dash-header .date { color: var(--muted); font-size: 12px; margin-top: 4px; font-family: 'DM Mono', monospace; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+    .card.green::before  { background: linear-gradient(90deg, var(--green), transparent); }
+    .card.blue::before   { background: linear-gradient(90deg, var(--blue), transparent); }
+    .card.orange::before { background: linear-gradient(90deg, var(--orange), transparent); }
+    .card.ai::before     { background: linear-gradient(90deg, var(--blue), var(--purple), transparent); }
+
+    .card-title { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
+    .card-title span { font-size: 13px; font-weight: 700; letter-spacing: 0.06em; color: var(--subtle); }
+
+    /* ── Rings ── */
+    .rings { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 16px; }
+    .ring-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .ring-wrap svg { filter: drop-shadow(0 0 8px rgba(59,130,246,0.15)); }
+    .ring-label { text-align: center; }
+    .ring-label .rl { color: var(--muted); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; font-family: 'DM Mono', monospace; }
+    .ring-label .rv { font-size: 11px; margin-top: 2px; font-family: 'DM Mono', monospace; font-weight: 500; }
+
+    /* ── Pills grid ── */
+    .pills { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .pill { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+    .pill .pl { color: var(--muted); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; font-family: 'DM Mono', monospace; }
+    .pill .pv { font-size: 18px; font-weight: 700; font-family: 'DM Mono', monospace; }
+
+    /* ── AI Box ── */
+    .ai-card {
+      background: linear-gradient(135deg, #0c1a2e, var(--surface));
+      border: 1px solid var(--blue-dim);
+    }
+    .ai-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .ai-label { color: #93c5fd; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; }
+    #ai-refresh { margin-left: auto; background: none; border: 1px solid var(--blue-dim); border-radius: 6px; color: var(--blue); font-size: 10px; padding: 4px 10px; cursor: pointer; font-family: 'DM Mono', monospace; letter-spacing: 0.05em; transition: all 0.2s; }
+    #ai-refresh:hover { background: var(--blue-dim); }
+    #ai-text { color: var(--subtle); font-size: 14px; line-height: 1.75; }
+    #ai-text.loading { color: var(--blue); font-style: italic; animation: pulse 1.5s ease infinite; }
+
+    .disconnect { text-align: center; margin-top: 8px; }
+    .disconnect button { background: none; border: none; color: #334155; font-size: 12px; cursor: pointer; font-family: 'DM Mono', monospace; }
+    .disconnect button:hover { color: var(--muted); }
+
+    /* ── Animations ── */
+    @keyframes spin  { to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .card { animation: fadeUp 0.4s ease both; }
+    .card:nth-child(2) { animation-delay: 0.05s; }
+    .card:nth-child(3) { animation-delay: 0.10s; }
+    .card:nth-child(4) { animation-delay: 0.15s; }
+    .card:nth-child(5) { animation-delay: 0.20s; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- SETUP -->
+  <div id="setup">
+    <div class="setup-hero">
+      <span class="bolt">⚡</span>
+      <h1>Training Dashboard</h1>
+      <p>WHOOP + Strava + Claude AI</p>
+    </div>
+
+    <div class="cred-card whoop">
+      <div class="cred-header">
+        <div class="cred-dot whoop"></div>
+        <span class="cred-title">WHOOP</span>
+        <a class="cred-link" href="https://developer.whoop.com" target="_blank">Get credentials →</a>
+      </div>
+      <div class="field"><label>Client ID</label><input id="w-id" placeholder="whoop_client_id_..." /></div>
+      <div class="field"><label>Client Secret</label><input id="w-secret" type="password" placeholder="••••••••••••" /></div>
+    </div>
+
+    <div class="cred-card strava">
+      <div class="cred-header">
+        <div class="cred-dot strava"></div>
+        <span class="cred-title">Strava</span>
+        <a class="cred-link" href="https://www.strava.com/settings/api" target="_blank">Get credentials →</a>
+      </div>
+      <div class="field"><label>Client ID</label><input id="s-id" placeholder="12345678" /></div>
+      <div class="field"><label>Client Secret</label><input id="s-secret" type="password" placeholder="••••••••••••" /></div>
+    </div>
+
+    <button id="connect-btn" disabled onclick="startAuth()">CONNECT &amp; AUTHORIZE</button>
+
+    <div class="guide-box">
+      <div class="guide-title">📋 REDIRECT URI / CALLBACK DOMAIN</div>
+      <p>
+        <b>WHOOP Redirect URI:</b> paste the full URL of this page (what's in your browser address bar right now).<br />
+        <b>Strava Callback Domain:</b> just the domain part — e.g. <b>yourusername.github.io</b>
+      </p>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p id="loading-msg">Authorizing...</p>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard">
+    <div class="dash-header">
+      <h1>Training Dashboard</h1>
+      <div class="date" id="today-date"></div>
+    </div>
+
+    <!-- Recovery -->
+    <div class="card green">
+      <div class="card-title"><span>💚 RECOVERY &amp; HRV</span></div>
+      <div class="rings" id="rings"></div>
+    </div>
+
+    <!-- Sleep -->
+    <div class="card blue">
+      <div class="card-title"><span>🌙 SLEEP</span></div>
+      <div class="pills" id="sleep-pills"></div>
+    </div>
+
+    <!-- Runs -->
+    <div class="card orange">
+      <div class="card-title"><span>🏃 RUN PERFORMANCE</span></div>
+      <div class="pills" id="run-pills"></div>
+    </div>
+
+    <!-- AI -->
+    <div class="card ai-card">
+      <div class="ai-header">
+        <span>🤖</span>
+        <span class="ai-label">AI COACH INSIGHT</span>
+        <button id="ai-refresh" onclick="generateInsight()">REFRESH</button>
+      </div>
+      <div id="ai-text" class="loading">Analysing your training data...</div>
+    </div>
+
+    <div class="disconnect"><button onclick="disconnect()">disconnect &amp; reset</button></div>
+  </div>
+
+</div>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────
+const WHOOP_AUTH  = "https://api.prod.whoop.com/oauth/oauth2/auth";
+const WHOOP_TOKEN = "https://api.prod.whoop.com/oauth/oauth2/token";
+const STRAVA_AUTH  = "https://www.strava.com/oauth/authorize";
+const STRAVA_TOKEN = "https://www.strava.com/oauth/token";
+const REDIRECT_URI = window.location.href.split("?")[0].split("#")[0];
+
+// Enable button when all fields filled
+["w-id","w-secret","s-id","s-secret"].forEach(id => {
+  document.getElementById(id).addEventListener("input", () => {
+    const all = ["w-id","w-secret","s-id","s-secret"].every(i => document.getElementById(i).value.trim());
+    document.getElementById("connect-btn").disabled = !all;
+  });
+});
+
+// Restore saved creds into inputs
+const saved = JSON.parse(sessionStorage.getItem("creds") || "null");
+if (saved) {
+  document.getElementById("w-id").value     = saved.wId;
+  document.getElementById("w-secret").value = saved.wSecret;
+  document.getElementById("s-id").value     = saved.sId;
+  document.getElementById("s-secret").value = saved.sSecret;
+  document.getElementById("connect-btn").disabled = false;
+}
+
+// ─── PKCE ─────────────────────────────────────────────────────────────────
+async function generatePKCE() {
+  const verifier = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+    .map(b => b.toString(16).padStart(2,"0")).join("");
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+  const challenge = btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g,"-").replace(/\//g,"_").replace(/=/g,"");
+  return { verifier, challenge };
+}
+
+// ─── Auth flow ────────────────────────────────────────────────────────────
+async function startAuth() {
+  const creds = {
+    wId:     document.getElementById("w-id").value.trim(),
+    wSecret: document.getElementById("w-secret").value.trim(),
+    sId:     document.getElementById("s-id").value.trim(),
+    sSecret: document.getElementById("s-secret").value.trim(),
+  };
+  sessionStorage.setItem("creds", JSON.stringify(creds));
+  sessionStorage.setItem("step", "whoop");
+
+  const { verifier, challenge } = await generatePKCE();
+  sessionStorage.setItem("pkce", verifier);
+
+  const url = `${WHOOP_AUTH}?response_type=code&client_id=${creds.wId}`
+    + `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`
+    + `&scope=read:recovery read:sleep read:workout read:cycle read:body_measurement`
+    + `&code_challenge=${challenge}&code_challenge_method=S256`;
+  window.location.href = url;
+}
+
+// ─── Handle OAuth callback ────────────────────────────────────────────────
+async function handleCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("code");
+  const step = sessionStorage.getItem("step");
+  const creds = JSON.parse(sessionStorage.getItem("creds") || "null");
+
+  if (!code || !creds) return false;
+
+  show("loading");
+
+  if (step === "whoop") {
+    document.getElementById("loading-msg").textContent = "Exchanging WHOOP token...";
+    const verifier = sessionStorage.getItem("pkce");
+    const body = new URLSearchParams({
+      grant_type: "authorization_code", code,
+      client_id: creds.wId, client_secret: creds.wSecret,
+      redirect_uri: REDIRECT_URI, code_verifier: verifier,
+    });
+    const res = await fetch(WHOOP_TOKEN, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
+    const data = await res.json();
+
+    if (!data.access_token) {
+      alert("WHOOP auth failed: " + JSON.stringify(data)); show("setup"); return true;
+    }
+    sessionStorage.setItem("whoop_token", data.access_token);
+    sessionStorage.setItem("step", "strava");
+    window.history.replaceState({}, "", REDIRECT_URI);
+
+    // Now redirect to Strava
+    document.getElementById("loading-msg").textContent = "Now authorizing Strava...";
+    await new Promise(r => setTimeout(r, 800));
+    const stravaUrl = `${STRAVA_AUTH}?client_id=${creds.sId}`
+      + `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`
+      + `&response_type=code&scope=activity:read_all`;
+    window.location.href = stravaUrl;
+    return true;
+  }
+
+  if (step === "strava") {
+    document.getElementById("loading-msg").textContent = "Exchanging Strava token...";
+    const res = await fetch(STRAVA_TOKEN, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ client_id: creds.sId, client_secret: creds.sSecret, code, grant_type: "authorization_code" })
+    });
+    const data = await res.json();
+
+    if (!data.access_token) {
+      alert("Strava auth failed: " + JSON.stringify(data)); show("setup"); return true;
+    }
+    sessionStorage.setItem("strava_token", data.access_token);
+    sessionStorage.removeItem("step");
+    window.history.replaceState({}, "", REDIRECT_URI);
+    await loadDashboard();
+    return true;
+  }
+
+  return false;
+}
+
+// ─── Load data ────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  show("loading");
+  document.getElementById("loading-msg").textContent = "Fetching your data...";
+
+  const wt = sessionStorage.getItem("whoop_token");
+  const st = sessionStorage.getItem("strava_token");
+
+  try {
+    const [recRes, sleepRes, cycleRes, actRes] = await Promise.all([
+      fetch("https://api.prod.whoop.com/developer/v1/recovery?limit=1",         { headers: { Authorization: `Bearer ${wt}` } }),
+      fetch("https://api.prod.whoop.com/developer/v1/activity/sleep?limit=1",   { headers: { Authorization: `Bearer ${wt}` } }),
+      fetch("https://api.prod.whoop.com/developer/v1/cycle?limit=1",            { headers: { Authorization: `Bearer ${wt}` } }),
+      fetch("https://www.strava.com/api/v3/athlete/activities?per_page=10",     { headers: { Authorization: `Bearer ${st}` } }),
+    ]);
+
+    const [recData, sleepData, cycleData, acts] = await Promise.all([
+      recRes.json(), sleepRes.json(), cycleRes.json(), actRes.json()
+    ]);
+
+    const rec   = recData.records?.[0]?.score   ?? {};
+    const sleep = sleepData.records?.[0]?.score ?? {};
+    const cycle = cycleData.records?.[0]?.score ?? {};
+    const runs  = Array.isArray(acts) ? acts.filter(a => a.type === "Run") : [];
+
+    renderDashboard(rec, sleep, cycle, runs);
+    window._dashData = { rec, sleep, cycle, runs };
+    generateInsight();
+    show("dashboard");
+  } catch(e) {
+    alert("Failed to load data: " + e.message);
+    show("setup");
+  }
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────
+function scoreColor(v, max=100) {
+  const p = v/max;
+  return p >= 0.67 ? "#4ade80" : p >= 0.33 ? "#fbbf24" : "#f87171";
+}
+
+function ring(value, max, color, label, sub) {
+  const size = 72, stroke = 6, r = (size-stroke)/2;
+  const circ = 2*Math.PI*r;
+  const pct = Math.min((value||0)/max, 1);
+  const offset = circ*(1-pct);
+  return `
+    <div class="ring-wrap">
+      <svg width="${size}" height="${size}" style="transform:rotate(-90deg)">
+        <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#1e293b" stroke-width="${stroke}"/>
+        <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}"
+          stroke-dasharray="${circ}" stroke-dashoffset="${offset}" stroke-linecap="round"
+          style="transition:stroke-dashoffset 1s ease"/>
+        <text x="${size/2}" y="${size/2}" text-anchor="middle" dominant-baseline="middle"
+          fill="#f1f5f9" font-size="${size*0.22}" font-weight="700" font-family="DM Mono,monospace"
+          style="transform:rotate(90deg);transform-origin:${size/2}px ${size/2}px">${Math.round(value||0)}</text>
+      </svg>
+      <div class="ring-label">
+        <div class="rl">${label}</div>
+        <div class="rv" style="color:${color}">${sub}</div>
+      </div>
+    </div>`;
+}
+
+function pill(label, value, color="#38bdf8") {
+  return `<div class="pill"><div class="pl">${label}</div><div class="pv" style="color:${color}">${value}</div></div>`;
+}
+
+function fmtHours(ms) {
+  if (!ms) return "—";
+  const h = Math.floor(ms/3600000), m = Math.floor((ms%3600000)/60000);
+  return `${h}h ${m}m`;
+}
+
+function fmtPace(speed) {
+  if (!speed) return "—";
+  const sPerKm = Math.round(1000/speed);
+  return `${Math.floor(sPerKm/60)}:${String(sPerKm%60).padStart(2,"0")}/km`;
+}
+
+function renderDashboard(rec, sleep, cycle, runs) {
+  document.getElementById("today-date").textContent =
+    new Date().toLocaleDateString("sv-SE", { weekday:"long", month:"long", day:"numeric" });
+
+  const hrv = rec.hrv_rmssd_milli;
+  document.getElementById("rings").innerHTML =
+    ring(rec.score||0, 100, scoreColor(rec.score||0), "Recovery", `${rec.score||"—"}%`) +
+    ring(Math.min((hrv||0)/2,100), 100, "#a78bfa", "HRV", hrv ? `${Math.round(hrv)}ms` : "—") +
+    ring(sleep.score||0, 100, "#38bdf8", "Sleep", `${sleep.score||"—"}%`) +
+    ring(Math.min((cycle.strain||0)/21*100,100), 100, "#fb923c", "Strain", cycle.strain ? `${Math.round(cycle.strain*10)/10}/21` : "—");
+
+  document.getElementById("sleep-pills").innerHTML =
+    pill("Total Sleep",   fmtHours(sleep.total_in_bed_time_milli), "#38bdf8") +
+    pill("Resting HR",    rec.resting_heart_rate ? `${rec.resting_heart_rate} bpm` : "—", "#f472b6") +
+    pill("Sleep Score",   sleep.score ? `${sleep.score}%` : "—", "#a78bfa");
+
+  const last = runs[0];
+  const now = Date.now();
+  const weekKm = runs.filter(a => now - new Date(a.start_date) < 7*86400000)
+    .reduce((s,a) => s + a.distance/1000, 0);
+
+  document.getElementById("run-pills").innerHTML =
+    pill("Last Distance", last ? `${Math.round(last.distance/100)/10} km` : "—", "#fb923c") +
+    pill("Avg Pace",      last ? fmtPace(last.average_speed) : "—", "#fbbf24") +
+    pill("Avg HR",        last?.average_heartrate ? `${Math.round(last.average_heartrate)} bpm` : "—", "#f87171") +
+    pill("Week Volume",   weekKm > 0 ? `${Math.round(weekKm*10)/10} km` : "—", "#4ade80") +
+    pill("Activities",    `${runs.length} runs`, "#38bdf8") +
+    pill("Last Run HR",   last?.max_heartrate ? `${last.max_heartrate} max` : "—", "#a78bfa");
+}
+
+// ─── AI Insight ───────────────────────────────────────────────────────────
+async function generateInsight() {
+  const d = window._dashData;
+  if (!d) return;
+  const { rec, sleep, cycle, runs } = d;
+  const el = document.getElementById("ai-text");
+  el.className = "loading";
+  el.textContent = "Analysing your training data...";
+
+  const prompt = `You are a sports science coach. Give a concise, direct training recommendation (3-4 sentences) based on this athlete's data. Be specific and actionable. No markdown, no headers, write like a coach texting their athlete.
+
+WHOOP:
+- Recovery: ${rec.score ?? "N/A"}%
+- HRV: ${rec.hrv_rmssd_milli ? Math.round(rec.hrv_rmssd_milli)+"ms" : "N/A"}
+- Resting HR: ${rec.resting_heart_rate ?? "N/A"} bpm
+- Sleep score: ${sleep.score ?? "N/A"}%
+- Sleep duration: ${sleep.total_in_bed_time_milli ? Math.round(sleep.total_in_bed_time_milli/3600000*10)/10+"h" : "N/A"}
+- Strain: ${cycle.strain ?? "N/A"}/21
+
+Strava recent runs:
+${runs.slice(0,3).map((a,i) => `Run ${i+1}: ${Math.round(a.distance/100)/10}km, pace ${fmtPace(a.average_speed)}, avg HR ${a.average_heartrate ?? "N/A"}`).join("\n") || "No recent runs"}`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+    const data = await res.json();
+    el.className = "";
+    el.textContent = data.content?.[0]?.text ?? "Could not generate insight.";
+  } catch {
+    el.className = "";
+    el.textContent = "Failed to reach AI. Check your connection and try refreshing.";
+  }
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────
+function show(screen) {
+  document.getElementById("setup").style.display     = screen === "setup"     ? "flex"   : "none";
+  document.getElementById("loading").style.display   = screen === "loading"   ? "flex"   : "none";
+  document.getElementById("dashboard").style.display = screen === "dashboard" ? "flex"   : "none";
+}
+
+function disconnect() {
+  sessionStorage.clear();
+  show("setup");
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────
+(async () => {
+  const handled = await handleCallback();
+  if (handled) return;
+
+  const wt = sessionStorage.getItem("whoop_token");
+  const st = sessionStorage.getItem("strava_token");
+  if (wt && st) { await loadDashboard(); return; }
+
+  show("setup");
+})();
+</script>
+</body>
+</html>
